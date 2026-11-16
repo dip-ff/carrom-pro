@@ -1,0 +1,1873 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#080808" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="icon" type="image/svg+xml" href="./icon.svg" />
+  <link rel="apple-touch-icon" href="./icon.svg" />
+  <title>Carrom Scorer Pro</title>
+  <style>
+    :root {
+      --bg: #080808;
+      --bg-elevated: #141414;
+      --card: #242424;
+      --card-hover: #2f2f2f;
+      --border: #333333;
+      --accent: #E50914;
+      --accent-dark: #b20710;
+      --accent-glow: rgba(229, 9, 20, 0.35);
+      --text: #FFFFFF;
+      --text-sec: #B3B3B3;
+      --text-muted: #787878;
+      --success: #2ecc71;
+      --warning: #f39c12;
+      --radius: 14px;
+      --radius-sm: 10px;
+      --transition: 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+      --nav-height: 64px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    input, textarea, select { user-select: text; }
+
+    html, body {
+      height: 100%;
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, "Noto Sans Bengali", sans-serif;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ================= SPLASH SCREEN ================= */
+    #splash-screen {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at center, #1e5799 0%, #0d2b52 55%, #051326 100%);
+      transition: opacity 0.45s ease, visibility 0.45s ease;
+    }
+
+    #splash-screen.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .board-3d-wrap { perspective: 900px; margin-bottom: 28px; }
+
+    .carrom-board-3d {
+      width: 220px;
+      height: 220px;
+      background: linear-gradient(145deg, #f3d5a5, #dfb376);
+      border: 14px solid #3c1e0e;
+      border-radius: 22px;
+      position: relative;
+      transform: rotateX(28deg) rotateZ(-12deg);
+      box-shadow:
+        0 26px 45px rgba(0, 0, 0, 0.65),
+        inset 0 0 0 3px #6b3819,
+        inset 0 0 18px rgba(80, 40, 10, 0.25);
+      animation: boardFloat 2.4s ease-in-out infinite alternate;
+    }
+
+    @keyframes boardFloat {
+      0% { transform: rotateX(28deg) rotateZ(-12deg) translateY(0px); }
+      100% { transform: rotateX(24deg) rotateZ(-8deg) translateY(-8px); }
+    }
+
+    .pocket {
+      width: 22px; height: 22px; border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #222, #000);
+      position: absolute;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.9);
+    }
+    .p-tl { top: 6px; left: 6px; }
+    .p-tr { top: 6px; right: 6px; }
+    .p-bl { bottom: 6px; left: 6px; }
+    .p-br { bottom: 6px; right: 6px; }
+
+    .board-center-ring {
+      position: absolute; top: 50%; left: 50%;
+      width: 68px; height: 68px;
+      transform: translate(-50%, -50%);
+      border: 2px solid #9b2915; border-radius: 50%;
+    }
+    .board-center-ring::after {
+      content: ""; position: absolute; inset: 14px;
+      border: 1.5px dashed #222; border-radius: 50%;
+    }
+
+    .board-baseline {
+      position: absolute; left: 34px; right: 34px; bottom: 24px;
+      height: 10px;
+      border-top: 1.5px solid #2a2a2a; border-bottom: 1.5px solid #2a2a2a;
+      border-radius: 6px;
+    }
+
+    .splash-coin {
+      width: 17px; height: 17px; border-radius: 50%; position: absolute;
+      box-shadow: 0 3px 4px rgba(0,0,0,0.45), inset 0 1px 2px rgba(255,255,255,0.4);
+    }
+    .c-red { background: radial-gradient(circle at 30% 30%, #ff4d5a, #b70712); top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 3; }
+    .c-w1 { background: radial-gradient(circle at 30% 30%, #fff, #d2c7b2); top: 41%; left: 42%; }
+    .c-w2 { background: radial-gradient(circle at 30% 30%, #fff, #d2c7b2); top: 53%; left: 57%; }
+    .c-w3 { background: radial-gradient(circle at 30% 30%, #fff, #d2c7b2); top: 38%; left: 54%; }
+    .c-b1 { background: radial-gradient(circle at 30% 30%, #444, #111); top: 56%; left: 41%; }
+    .c-b2 { background: radial-gradient(circle at 30% 30%, #444, #111); top: 44%; left: 59%; }
+    .c-b3 { background: radial-gradient(circle at 30% 30%, #444, #111); top: 59%; left: 50%; }
+
+    .splash-striker {
+      width: 24px; height: 24px; border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #fff5cc, #f5b942 65%, #b37400);
+      border: 2px solid #fff; position: absolute; bottom: 17px; left: 50%;
+      transform: translateX(-50%);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.55);
+      animation: strikerReady 1.8s ease-in-out forwards;
+    }
+
+    @keyframes strikerReady {
+      0% { transform: translateX(-50%) translateY(0); }
+      45% { transform: translateX(-50%) translateY(6px) scale(0.95); }
+      75% { transform: translateX(-50%) translateY(-44px) scale(1.03); }
+      100% { transform: translateX(-50%) translateY(-48px); }
+    }
+
+    .splash-title { font-size: 1.75rem; font-weight: 900; letter-spacing: 0.5px; text-align: center; text-shadow: 0 3px 12px rgba(0,0,0,0.6); }
+    .splash-title span { color: var(--accent); }
+    .splash-sub { color: #cfe2ff; font-size: 0.85rem; margin-top: 6px; letter-spacing: 1.5px; text-transform: uppercase; }
+
+    .loader-track { width: 200px; height: 5px; background: rgba(255,255,255,0.18); border-radius: 99px; overflow: hidden; margin-top: 22px; }
+    .loader-bar { height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent), #ff5252); border-radius: 99px; animation: loadFill 1.8s ease-out forwards; }
+    @keyframes loadFill { 0% { width: 0%; } 100% { width: 100%; } }
+
+    /* ================= UPDATE BANNER (PLAY STORE STYLE) ================= */
+    .update-banner {
+      position: fixed;
+      top: 62px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: calc(100% - 24px);
+      max-width: 516px;
+      background: linear-gradient(135deg, #1b2e22, #1a1a1a);
+      border: 1.5px solid var(--success);
+      border-radius: 14px;
+      padding: 12px 14px;
+      z-index: 700;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.75);
+      animation: fadeSlide 0.3s ease-out;
+    }
+
+    /* ================= APP SHELL ================= */
+    #app {
+      max-width: 540px;
+      margin: 0 auto;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg);
+      position: relative;
+      padding-bottom: calc(var(--nav-height) + 16px);
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(8, 8, 8, 0.92);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid #1c1c1c;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .brand { display: flex; align-items: center; gap: 10px; }
+    .brand-icon {
+      width: 30px; height: 30px; border-radius: 8px;
+      background: linear-gradient(135deg, var(--accent), #99040c);
+      display: grid; place-items: center; font-weight: 900; font-size: 0.95rem;
+      box-shadow: 0 3px 10px var(--accent-glow);
+    }
+    .brand-name { font-size: 1.08rem; font-weight: 800; letter-spacing: 0.3px; }
+    .brand-name span { color: var(--accent); }
+
+    .topbar-actions { display: flex; align-items: center; gap: 8px; }
+
+    .pill-btn {
+      background: var(--card); color: var(--text);
+      border: 1px solid var(--border); border-radius: 99px;
+      padding: 6px 11px; font-size: 0.78rem; font-weight: 700;
+      cursor: pointer; transition: transform var(--transition), background var(--transition);
+    }
+    .pill-btn:active { transform: scale(0.95); }
+
+    /* ================= VIEWS ================= */
+    .view { display: none; padding: 14px 16px; animation: fadeSlide 0.22s ease-out; }
+    .view.active { display: block; }
+    @keyframes fadeSlide {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ================= CARDS & FORM ELEMENTS ================= */
+    .card {
+      background: var(--card); border-radius: var(--radius);
+      padding: 16px; margin-bottom: 14px;
+      border: 1px solid #2e2e2e;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+    }
+
+    .section-title {
+      font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.9px;
+      color: var(--text-sec); font-weight: 700; margin-bottom: 10px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+
+    .segmented {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+      background: #161616; padding: 5px; border-radius: 12px;
+      border: 1px solid #2b2b2b;
+    }
+
+    .seg-btn {
+      padding: 12px 10px; border: none; border-radius: 9px;
+      background: transparent; color: var(--text-sec);
+      font-weight: 700; font-size: 0.9rem; cursor: pointer;
+      transition: all var(--transition);
+    }
+    .seg-btn.active {
+      background: var(--accent); color: var(--text);
+      box-shadow: 0 4px 12px var(--accent-glow);
+    }
+
+    .input-group { margin-bottom: 12px; }
+    .input-group:last-child { margin-bottom: 0; }
+    .input-label { display: block; font-size: 0.82rem; color: var(--text-sec); margin-bottom: 6px; font-weight: 600; }
+
+    .text-input {
+      width: 100%; background: #151515; border: 1.5px solid #353535;
+      color: var(--text); padding: 12px 14px; border-radius: var(--radius-sm);
+      font-size: 0.96rem; font-weight: 600; outline: none;
+      transition: border-color var(--transition);
+    }
+    .text-input:focus { border-color: var(--accent); }
+
+    .btn-primary {
+      width: 100%;
+      background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+      color: #fff; border: none; border-radius: var(--radius);
+      padding: 15px 18px; font-size: 1rem; font-weight: 800;
+      letter-spacing: 0.5px; cursor: pointer;
+      box-shadow: 0 8px 22px var(--accent-glow);
+      transition: transform var(--transition), opacity var(--transition);
+    }
+    .btn-primary:active { transform: scale(0.97); }
+    .btn-primary:disabled { opacity: 0.45; box-shadow: none; cursor: not-allowed; }
+
+    .btn-secondary {
+      background: #303030; color: #fff; border: 1px solid #424242;
+      border-radius: var(--radius-sm); padding: 11px 14px;
+      font-size: 0.88rem; font-weight: 700; cursor: pointer;
+      transition: transform var(--transition), background var(--transition);
+    }
+    .btn-secondary:active { transform: scale(0.96); }
+
+    .resume-banner {
+      background: linear-gradient(135deg, #2b1416, #1e1e1e);
+      border: 1px solid var(--accent); border-radius: var(--radius);
+      padding: 14px; margin-bottom: 14px;
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    }
+
+    /* ================= MATCH SCOREBOARD ================= */
+    .match-meta-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 10px; font-size: 0.82rem; color: var(--text-sec); font-weight: 700;
+    }
+    .round-badge { background: #1b1b1b; border: 1px solid #333; padding: 4px 10px; border-radius: 99px; color: #fff; }
+
+    .scoreboard-card {
+      background: linear-gradient(180deg, #282828 0%, #1d1d1d 100%);
+      border: 1px solid #363636; border-radius: 18px;
+      padding: 18px 10px; margin-bottom: 14px;
+      display: grid; grid-template-columns: 1fr 2px 1fr; align-items: center;
+      box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45);
+    }
+    .score-divider { width: 2px; height: 82%; background: linear-gradient(to bottom, transparent, #484848, transparent); }
+    .team-col { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 0 8px; }
+    .team-name-row { display: flex; align-items: center; justify-content: center; gap: 7px; margin-bottom: 8px; max-width: 100%; }
+    .team-label { font-size: 0.95rem; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px; }
+
+    .coin-indicator { width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0; transition: transform 0.3s ease; }
+    .coin-white { background: radial-gradient(circle at 35% 35%, #ffffff, #dcd3c0); border: 1.5px solid #999; box-shadow: 0 0 8px rgba(255, 255, 255, 0.45); }
+    .coin-black { background: radial-gradient(circle at 35% 35%, #4b4b4b, #0c0c0c); border: 1.5px solid #666; box-shadow: 0 0 6px rgba(0, 0, 0, 0.7); }
+
+    .team-score { font-size: 3rem; font-weight: 900; line-height: 1; letter-spacing: -1px; font-variant-numeric: tabular-nums; }
+    .red-limit-tag { margin-top: 6px; font-size: 0.7rem; font-weight: 700; color: var(--warning); background: rgba(243, 156, 18, 0.14); padding: 2px 8px; border-radius: 99px; border: 1px solid rgba(243, 156, 18, 0.35); }
+
+    /* ================= SELECTION GRIDS ================= */
+    .btn-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .choice-btn {
+      background: #171717; border: 1.5px solid #353535; color: var(--text);
+      border-radius: 12px; padding: 13px 8px; font-size: 0.88rem; font-weight: 700;
+      cursor: pointer; transition: all var(--transition);
+      text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .choice-btn:active { transform: scale(0.96); }
+    .choice-btn.selected { background: var(--accent); border-color: #ff444e; color: #fff; box-shadow: 0 4px 14px var(--accent-glow); }
+    .choice-btn.selected-nil { background: #444; border-color: #777; color: #fff; }
+
+    .coins-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+    .coin-num-btn {
+      background: #171717; border: 1.5px solid #353535; color: #fff;
+      border-radius: 12px; height: 48px; font-size: 1.1rem; font-weight: 800;
+      cursor: pointer; transition: all var(--transition);
+    }
+    .coin-num-btn:active { transform: scale(0.93); }
+    .coin-num-btn.selected { background: var(--accent); border-color: #ff444e; box-shadow: 0 4px 12px var(--accent-glow); }
+
+    .preset-row { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 12px; scrollbar-width: none; }
+    .preset-row::-webkit-scrollbar { display: none; }
+    .preset-chip {
+      flex-shrink: 0; background: #1d1d1d; border: 1px solid #383838;
+      color: var(--text-sec); padding: 7px 12px; border-radius: 99px;
+      font-size: 0.78rem; font-weight: 700; cursor: pointer;
+    }
+    .preset-chip:active { background: var(--accent); color: #fff; }
+
+    .preview-box {
+      background: #151515; border: 1px solid #333; border-left: 4px solid var(--accent);
+      border-radius: 10px; padding: 11px 13px; margin-bottom: 12px;
+      font-size: 0.86rem; line-height: 1.45;
+    }
+
+    .action-toolbar { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+    .tool-btn {
+      background: #1a1a1a; border: 1px solid #323232; color: var(--text-sec);
+      border-radius: 10px; padding: 9px 6px; font-size: 0.76rem; font-weight: 700; cursor: pointer;
+    }
+    .tool-btn:active { transform: scale(0.96); background: #292929; }
+    .tool-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    /* ================= HISTORY, STATS, SETTINGS ================= */
+    .list-item { background: #1a1a1a; border: 1px solid #2e2e2e; border-radius: 12px; padding: 13px; margin-bottom: 10px; }
+    .stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 14px; }
+    .stat-box { background: var(--card); border: 1px solid #333; border-radius: 14px; padding: 14px; text-align: center; }
+    .stat-val { font-size: 1.7rem; font-weight: 900; color: var(--text); }
+    .stat-val.accent { color: var(--accent); }
+    .stat-lbl { font-size: 0.78rem; color: var(--text-sec); margin-top: 4px; font-weight: 600; }
+
+    .setting-row { display: flex; align-items: center; justify-content: space-between; padding: 13px 0; border-bottom: 1px solid #303030; }
+    .setting-row:last-child { border-bottom: none; }
+
+    .switch { position: relative; width: 48px; height: 26px; flex-shrink: 0; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; inset: 0; background: #444; border-radius: 99px; cursor: pointer; transition: 0.2s; }
+    .slider::before { content: ""; position: absolute; width: 20px; height: 20px; left: 3px; bottom: 3px; background: #fff; border-radius: 50%; transition: 0.2s; }
+    .switch input:checked + .slider { background: var(--accent); }
+    .switch input:checked + .slider::before { transform: translateX(22px); }
+
+    /* ================= VICTORY SCREEN ================= */
+    .victory-card {
+      background: radial-gradient(circle at top, #380b0e 0%, #1d1d1d 70%);
+      border: 1.5px solid var(--accent); border-radius: 20px;
+      padding: 26px 18px; text-align: center; position: relative; overflow: hidden;
+    }
+    .trophy-icon { font-size: 3.4rem; margin-bottom: 8px; animation: bounceWin 1.2s ease infinite alternate; }
+    @keyframes bounceWin { from { transform: translateY(0) scale(1); } to { transform: translateY(-6px) scale(1.06); } }
+    .victory-title { font-size: 0.9rem; text-transform: uppercase; letter-spacing: 2px; color: var(--warning); font-weight: 800; }
+    .victory-winner { font-size: 1.9rem; font-weight: 900; margin: 6px 0 16px; }
+    .victory-scores {
+      display: grid; grid-template-columns: 1fr auto 1fr; align-items: center;
+      background: rgba(0,0,0,0.4); border-radius: 14px; padding: 14px;
+      margin-bottom: 16px; border: 1px solid #333;
+    }
+
+    #confetti-canvas { position: fixed; inset: 0; pointer-events: none; z-index: 900; }
+
+    /* ================= BOTTOM NAV ================= */
+    .bottom-nav {
+      position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+      width: 100%; max-width: 540px; height: var(--nav-height);
+      background: rgba(14, 14, 14, 0.96); backdrop-filter: blur(12px);
+      border-top: 1px solid #242424; display: grid; grid-template-columns: repeat(4, 1fr); z-index: 60;
+    }
+    .nav-btn {
+      background: none; border: none; color: var(--text-muted);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 4px; font-size: 0.7rem; font-weight: 700; cursor: pointer;
+      transition: color var(--transition);
+    }
+    .nav-btn.active { color: var(--accent); }
+    .nav-icon { font-size: 1.2rem; line-height: 1; }
+
+    /* ================= MODAL & TOAST ================= */
+    .modal-backdrop { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.78); z-index: 800; display: none; align-items: center; justify-content: center; padding: 16px; }
+    .modal-backdrop.open { display: flex; }
+    .modal-box { background: #1f1f1f; border: 1px solid #383838; border-radius: 18px; width: 100%; max-width: 460px; max-height: 85vh; overflow-y: auto; padding: 18px; box-shadow: 0 20px 50px rgba(0,0,0,0.75); }
+    .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+
+    .toast {
+      position: fixed; bottom: 78px; left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: #2b2b2b; color: #fff; border: 1px solid #444;
+      padding: 10px 18px; border-radius: 99px; font-size: 0.85rem; font-weight: 700;
+      opacity: 0; pointer-events: none; transition: all 0.25s ease; z-index: 950;
+      white-space: nowrap; box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    .hidden { display: none !important; }
+    .muted { color: var(--text-sec); font-size: 0.83rem; }
+  </style>
+</head>
+<body>
+
+  <!-- ================= SPLASH SCREEN ================= -->
+  <div id="splash-screen">
+    <div class="board-3d-wrap">
+      <div class="carrom-board-3d">
+        <div class="pocket p-tl"></div>
+        <div class="pocket p-tr"></div>
+        <div class="pocket p-bl"></div>
+        <div class="pocket p-br"></div>
+        <div class="board-center-ring"></div>
+        <div class="board-baseline"></div>
+        <div class="splash-coin c-w1"></div>
+        <div class="splash-coin c-w2"></div>
+        <div class="splash-coin c-w3"></div>
+        <div class="splash-coin c-b1"></div>
+        <div class="splash-coin c-b2"></div>
+        <div class="splash-coin c-b3"></div>
+        <div class="splash-coin c-red"></div>
+        <div class="splash-striker"></div>
+      </div>
+    </div>
+    <div class="splash-title">CARROM <span>SCORER PRO</span></div>
+    <div class="splash-sub" data-i18n="splashSub">Professional Offline Scorer</div>
+    <div class="loader-track"><div class="loader-bar"></div></div>
+  </div>
+
+  <!-- ================= PLAY STORE STYLE UPDATE BANNER ================= -->
+  <div id="update-banner" class="update-banner hidden">
+    <div>
+      <div style="font-weight:800; font-size:0.9rem; color:#2ecc71;" data-i18n="updateAvailable">New Update Available!</div>
+      <div class="muted" style="font-size:0.78rem;" data-i18n="updateDesc">Tap update to load new features.</div>
+    </div>
+    <div style="display:flex; gap:6px;">
+      <button class="pill-btn" id="btn-dismiss-update" data-i18n="later">Later</button>
+      <button class="btn-primary" id="btn-apply-update" style="width:auto; padding:8px 14px; font-size:0.8rem; background:var(--success); box-shadow:none;" data-i18n="updateNow">Update Now</button>
+    </div>
+  </div>
+
+  <canvas id="confetti-canvas"></canvas>
+
+  <!-- ================= MAIN APP ================= -->
+  <div id="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-icon">C</div>
+        <div class="brand-name">CARROM <span>PRO</span></div>
+      </div>
+      <div class="topbar-actions">
+        <button class="pill-btn hidden" id="install-top-btn" data-i18n="installAppShort">⬇ Install</button>
+        <button class="pill-btn" id="quick-lang-btn">EN / বাংলা</button>
+        <button class="pill-btn hidden" id="end-match-early-btn" data-i18n="newMatchShort">New</button>
+      </div>
+    </header>
+
+    <!-- ========== VIEW 1: HOME / MATCH SETTINGS ========== -->
+    <section id="view-home" class="view active">
+      <div id="resume-container" class="resume-banner hidden">
+        <div>
+          <div style="font-weight:800; font-size:0.92rem;" data-i18n="unfinishedMatch">Unfinished Match Found</div>
+          <div class="muted" id="resume-summary"></div>
+        </div>
+        <button class="btn-primary" style="width:auto; padding:10px 14px; font-size:0.84rem;" id="resume-btn" data-i18n="resume">Resume</button>
+      </div>
+
+      <div class="card">
+        <div class="section-title" data-i18n="matchMode">Match Mode</div>
+        <div class="segmented">
+          <button class="seg-btn active" id="mode-single" data-mode="single" data-i18n="singlePlayer">Single Player</button>
+          <button class="seg-btn" id="mode-double" data-mode="double" data-i18n="doublePlayer">Double Player</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title" id="names-section-title" data-i18n="playerNames">Player Names</div>
+        <div class="input-group">
+          <label class="input-label" id="lbl-side1" data-i18n="player1Name">Player 1 Name</label>
+          <input type="text" class="text-input" id="input-name1" maxlength="22" placeholder="Player 1" />
+        </div>
+        <div class="input-group">
+          <label class="input-label" id="lbl-side2" data-i18n="player2Name">Player 2 Name</label>
+          <input type="text" class="text-input" id="input-name2" maxlength="22" placeholder="Player 2" />
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">
+          <span data-i18n="firstStriker">First Striker (White Coins)</span>
+        </div>
+        <div class="segmented">
+          <button class="seg-btn active" id="first-1" data-first="1">Player 1</button>
+          <button class="seg-btn" id="first-2" data-first="2">Player 2</button>
+        </div>
+        <div class="muted" style="margin-top:10px; font-size:0.78rem;" data-i18n="firstStrikerHint">
+          First striker plays White coins. Coins switch automatically every round.
+        </div>
+      </div>
+
+      <button class="btn-primary" id="start-match-btn" data-i18n="startMatch">START MATCH</button>
+    </section>
+
+    <!-- ========== VIEW 2: LIVE MATCH SCREEN ========== -->
+    <section id="view-match" class="view">
+      <div class="match-meta-bar">
+        <span class="round-badge"><span data-i18n="round">Round</span> <strong id="lbl-round-num">1</strong></span>
+        <span data-i18n="target29">Target: 29 pts (Red Limit: 24)</span>
+      </div>
+
+      <div class="scoreboard-card">
+        <div class="team-col">
+          <div class="team-name-row">
+            <span class="coin-indicator coin-white" id="coin-ind-1"></span>
+            <span class="team-label" id="sb-name-1">Team 1</span>
+          </div>
+          <div class="team-score" id="sb-score-1">0</div>
+          <div class="red-limit-tag hidden" id="limit-tag-1" data-i18n="redDisabled">Red Bonus Off (24+)</div>
+        </div>
+
+        <div class="score-divider"></div>
+
+        <div class="team-col">
+          <div class="team-name-row">
+            <span class="team-label" id="sb-name-2">Team 2</span>
+            <span class="coin-indicator coin-black" id="coin-ind-2"></span>
+          </div>
+          <div class="team-score" id="sb-score-2">0</div>
+          <div class="red-limit-tag hidden" id="limit-tag-2" data-i18n="redDisabled">Red Bonus Off (24+)</div>
+        </div>
+      </div>
+
+      <!-- Quick Presets -->
+      <div class="preset-row">
+        <button class="preset-chip" id="preset-nil" data-i18n="presetNil">⚡ Nil Board</button>
+        <button class="preset-chip" id="preset-t1-red" data-i18n="presetT1Red">⚡ T1 + Red + 1</button>
+        <button class="preset-chip" id="preset-t2-red" data-i18n="presetT2Red">⚡ T2 + Red + 1</button>
+        <button class="preset-chip" id="preset-t1-clean" data-i18n="presetT1Clean">⚡ T1 Clean (1)</button>
+        <button class="preset-chip" id="preset-t2-clean" data-i18n="presetT2Clean">⚡ T2 Clean (1)</button>
+      </div>
+
+      <!-- 1. Point Winner -->
+      <div class="card">
+        <div class="section-title" data-i18n="pointWinner">Point Winner</div>
+        <div class="btn-grid-3">
+          <button class="choice-btn" id="win-btn-1" data-winner="1">Team 1</button>
+          <button class="choice-btn" id="win-btn-2" data-winner="2">Team 2</button>
+          <button class="choice-btn" id="win-btn-nil" data-winner="nil" data-i18n="nilBoard">Nil Board</button>
+        </div>
+      </div>
+
+      <!-- 2. Red Cover -->
+      <div class="card" id="card-red-cover">
+        <div class="section-title"><span data-i18n="redCover">Red Cover (+5)</span></div>
+        <div class="btn-grid-3">
+          <button class="choice-btn" id="red-btn-1" data-red="1">Team 1</button>
+          <button class="choice-btn" id="red-btn-2" data-red="2">Team 2</button>
+          <button class="choice-btn selected" id="red-btn-none" data-red="none" data-i18n="noOne">No One</button>
+        </div>
+      </div>
+
+      <!-- 3. Remaining Opponent Coins -->
+      <div class="card" id="card-remaining-coins">
+        <div class="section-title" data-i18n="remainingCoins">Opponent Remaining Coins</div>
+        <div class="coins-grid" id="coins-grid">
+          <button class="coin-num-btn" data-coins="1">1</button>
+          <button class="coin-num-btn" data-coins="2">2</button>
+          <button class="coin-num-btn" data-coins="3">3</button>
+          <button class="coin-num-btn" data-coins="4">4</button>
+          <button class="coin-num-btn" data-coins="5">5</button>
+          <button class="coin-num-btn" data-coins="6">6</button>
+          <button class="coin-num-btn" data-coins="7">7</button>
+          <button class="coin-num-btn" data-coins="8">8</button>
+          <button class="coin-num-btn" data-coins="9">9</button>
+        </div>
+      </div>
+
+      <div class="preview-box" id="round-preview"></div>
+
+      <div class="action-toolbar">
+        <button class="tool-btn" id="btn-undo-action" data-i18n="undoAction">↶ Undo Action</button>
+        <button class="tool-btn" id="btn-undo-round" data-i18n="undoRound">⟲ Undo Round</button>
+        <button class="tool-btn" id="btn-edit-rounds" data-i18n="editRounds">✎ Rounds (0)</button>
+      </div>
+
+      <button class="btn-primary" id="next-round-btn" data-i18n="nextRound">NEXT ROUND</button>
+    </section>
+
+    <!-- ========== VIEW 3: MATCH RESULT SCREEN ========== -->
+    <section id="view-result" class="view">
+      <div class="victory-card">
+        <div class="trophy-icon">🏆</div>
+        <div class="victory-title" data-i18n="matchWinner">Match Winner</div>
+        <div class="victory-winner" id="res-winner-name">Team 1</div>
+
+        <div class="victory-scores">
+          <div>
+            <div class="muted" id="res-name-1">Team 1</div>
+            <div style="font-size:2.2rem; font-weight:900;" id="res-score-1">29</div>
+          </div>
+          <div style="font-weight:800; color:var(--accent); font-size:1.1rem;">VS</div>
+          <div>
+            <div class="muted" id="res-name-2">Team 2</div>
+            <div style="font-size:2.2rem; font-weight:900;" id="res-score-2">18</div>
+          </div>
+        </div>
+
+        <div class="muted" style="margin-bottom:18px;">
+          <span data-i18n="totalRounds">Total Rounds</span>: <strong id="res-rounds" style="color:#fff;">5</strong>
+        </div>
+
+        <div style="display:grid; gap:10px;">
+          <button class="btn-primary" id="btn-share-result" data-i18n="shareScorecard">Share Scorecard</button>
+          <button class="btn-secondary" id="btn-new-match" data-i18n="newMatch">New Match</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== VIEW 4: MATCH HISTORY ========== -->
+    <section id="view-history" class="view">
+      <div class="section-title"><span data-i18n="matchHistory">Match History</span></div>
+      <div id="history-list"></div>
+    </section>
+
+    <!-- ========== VIEW 5: STATISTICS ========== -->
+    <section id="view-stats" class="view">
+      <div class="section-title" data-i18n="overallStats">Overall Statistics</div>
+      <div class="stat-grid">
+        <div class="stat-box">
+          <div class="stat-val accent" id="st-total-matches">0</div>
+          <div class="stat-lbl" data-i18n="totalMatches">Total Matches</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" id="st-highest-score">0</div>
+          <div class="stat-lbl" data-i18n="highestScore">Highest Score</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" id="st-total-wins">0</div>
+          <div class="stat-lbl" data-i18n="totalWins">Total Wins</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" id="st-total-losses">0</div>
+          <div class="stat-lbl" data-i18n="totalLosses">Total Losses</div>
+        </div>
+      </div>
+
+      <div class="section-title" data-i18n="teamPerformance">Team / Player Performance</div>
+      <div id="team-stats-list"></div>
+    </section>
+
+    <!-- ========== VIEW 6: SETTINGS ========== -->
+    <section id="view-settings" class="view">
+      <div class="card">
+        <div class="section-title" data-i18n="preferences">Preferences</div>
+
+        <div class="setting-row">
+          <div>
+            <div style="font-weight:700;" data-i18n="language">Language</div>
+            <div class="muted" id="current-lang-label">English</div>
+          </div>
+          <div class="segmented" style="width:165px;">
+            <button class="seg-btn active" id="lang-en" data-lang="en" style="padding:7px;">English</button>
+            <button class="seg-btn" id="lang-bn" data-lang="bn" style="padding:7px;">বাংলা</button>
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <div>
+            <div style="font-weight:700;" data-i18n="soundEffects">Sound Effects</div>
+            <div class="muted" data-i18n="soundDesc">Offline clicks, points & victory tones</div>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="toggle-sound" checked />
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="setting-row">
+          <div>
+            <div style="font-weight:700;" data-i18n="vibration">Vibration</div>
+            <div class="muted" data-i18n="vibrationDesc">Haptic feedback on taps</div>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="toggle-vibration" checked />
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <!-- App Version & Online Updates -->
+      <div class="card">
+        <div class="section-title">
+          <span data-i18n="appUpdates">App & Updates</span>
+          <span id="net-status-badge" style="color:var(--success); font-size:0.75rem;">Online</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <span class="muted" data-i18n="appVersion">Current Version</span>
+          <strong id="lbl-app-version">v1.1.0</strong>
+        </div>
+        <div style="display:grid; gap:10px;">
+          <button class="btn-secondary" id="btn-check-updates" data-i18n="checkUpdates">Check for Updates</button>
+          <button class="btn-primary hidden" id="btn-install-app" style="padding:12px;" data-i18n="installApp">Install App on Phone</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title" data-i18n="dataManagement">Data Management</div>
+        <div style="display:grid; gap:10px;">
+          <button class="btn-secondary" id="btn-backup" data-i18n="backupData">Export Backup (JSON)</button>
+          <button class="btn-secondary" id="btn-restore" data-i18n="restoreData">Restore Backup (JSON)</button>
+          <input type="file" id="restore-file-input" accept=".json,application/json" class="hidden" />
+          <button class="btn-secondary" id="btn-reset-all" style="background:#3a1216; border-color:var(--accent); color:#ff8086;" data-i18n="resetAll">Reset All Data</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== BOTTOM NAVIGATION ========== -->
+    <nav class="bottom-nav">
+      <button class="nav-btn active" data-nav="match-or-home">
+        <span class="nav-icon">🎯</span>
+        <span data-i18n="navPlay">Match</span>
+      </button>
+      <button class="nav-btn" data-nav="history">
+        <span class="nav-icon">📜</span>
+        <span data-i18n="navHistory">History</span>
+      </button>
+      <button class="nav-btn" data-nav="stats">
+        <span class="nav-icon">📊</span>
+        <span data-i18n="navStats">Stats</span>
+      </button>
+      <button class="nav-btn" data-nav="settings">
+        <span class="nav-icon">⚙️</span>
+        <span data-i18n="navSettings">Settings</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- ================= MODAL ================= -->
+  <div class="modal-backdrop" id="modal-backdrop">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 id="modal-title" style="font-size:1.05rem; font-weight:800;">Details</h3>
+        <button class="pill-btn" id="modal-close">✕</button>
+      </div>
+      <div id="modal-body"></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    (function () {
+      "use strict";
+
+      const APP_VERSION = "v1.1.0";
+
+      /* ================= 1. INTERNATIONALIZATION (EN & BN) ================= */
+      const I18N = {
+        en: {
+          splashSub: "Professional Offline Scorer",
+          updateAvailable: "New Update Available!",
+          updateDesc: "Tap update to load new features.",
+          updateNow: "Update Now",
+          later: "Later",
+          appUpdates: "App & Updates",
+          appVersion: "Current Version",
+          checkUpdates: "Check for Updates",
+          installApp: "Install App on Phone",
+          installAppShort: "⬇ Install",
+          checkingUpdate: "Checking for updates...",
+          upToDate: "You are on the latest version!",
+          offlineMode: "Offline Mode",
+          onlineMode: "Online",
+          swUnsupported: "Updates require HTTPS hosting (e.g. GitHub Pages).",
+          unfinishedMatch: "Unfinished Match Found",
+          resume: "Resume",
+          matchMode: "Match Mode",
+          singlePlayer: "Single Player",
+          doublePlayer: "Double Player",
+          playerNames: "Player Names",
+          teamNames: "Team Names",
+          player1Name: "Player 1 Name",
+          player2Name: "Player 2 Name",
+          team1Name: "Team 1 Name",
+          team2Name: "Team 2 Name",
+          firstStriker: "First Striker (White Coins)",
+          firstStrikerHint: "First striker plays White coins. Coins switch automatically every round.",
+          startMatch: "START MATCH",
+          newMatchShort: "New",
+          round: "Round",
+          target29: "Target: 29 pts (Red Limit: 24)",
+          redDisabled: "Red Bonus Off (24+)",
+          presetNil: "⚡ Nil Board",
+          presetT1Red: "⚡ +Red (1)",
+          presetT2Red: "⚡ +Red (1)",
+          presetT1Clean: "⚡ Clean (1)",
+          presetT2Clean: "⚡ Clean (1)",
+          pointWinner: "Point Winner",
+          nilBoard: "Nil Board",
+          redCover: "Red Cover (+5)",
+          noOne: "No One",
+          remainingCoins: "Opponent Remaining Coins",
+          undoAction: "↶ Undo Action",
+          undoRound: "⟲ Undo Round",
+          editRounds: "✎ Rounds",
+          nextRound: "NEXT ROUND",
+          matchWinner: "Match Winner",
+          totalRounds: "Total Rounds",
+          shareScorecard: "Share Scorecard",
+          newMatch: "New Match",
+          matchHistory: "Match History",
+          overallStats: "Overall Statistics",
+          totalMatches: "Total Matches",
+          highestScore: "Highest Score",
+          totalWins: "Total Wins",
+          totalLosses: "Total Losses",
+          teamPerformance: "Team / Player Performance",
+          preferences: "Preferences",
+          language: "Language",
+          soundEffects: "Sound Effects",
+          soundDesc: "Offline clicks, points & victory tones",
+          vibration: "Vibration",
+          vibrationDesc: "Haptic feedback on taps",
+          dataManagement: "Data Management",
+          backupData: "Export Backup (JSON)",
+          restoreData: "Restore Backup (JSON)",
+          resetAll: "Reset All Data",
+          navPlay: "Match",
+          navHistory: "History",
+          navStats: "Stats",
+          navSettings: "Settings",
+          selectPrompt: "Select Point Winner and Remaining Coins to preview round score.",
+          selectCoinsPrompt: "Select opponent's remaining coins (1–9).",
+          nilPreview: "Nil Board: Both teams receive 0 points. White/Black coins will switch.",
+          redLimitApplied: "24+ limit: Red bonus = 0",
+          redBonusApplied: "Red +5",
+          coinsPts: "Coins",
+          noHistory: "No completed matches yet.",
+          noStats: "Play matches to view team/player performance.",
+          wins: "Wins",
+          losses: "Losses",
+          matches: "Matches",
+          best: "Best",
+          editRoundTitle: "Edit Rounds",
+          roundDetails: "Match Details",
+          saveChanges: "Save & Recalculate",
+          edit: "Edit",
+          delete: "Delete",
+          confirmReset: "Are you sure you want to delete all match history and settings?",
+          confirmNewMatch: "Start a new match? Current unfinished match will be cleared.",
+          toastSaved: "Round saved",
+          toastUndoneAction: "Action undone",
+          toastUndoneRound: "Last round undone",
+          toastInvalidRound: "Please complete round selections first.",
+          toastBackupDone: "Backup downloaded!",
+          toastRestoreDone: "Backup restored!",
+          toastRestoreFail: "Invalid backup file.",
+          toastResetDone: "All data reset.",
+          toastCopied: "Scorecard ready!",
+          winnerTag: "Winner"
+        },
+        bn: {
+          splashSub: "প্রফেশনাল অফলাইন স্কোরার",
+          updateAvailable: "নতুন আপডেট পাওয়া গেছে!",
+          updateDesc: "নতুন ফিচার পেতে আপডেট করুন।",
+          updateNow: "আপডেট দিন",
+          later: "পরে",
+          appUpdates: "অ্যাপ ও অনলাইন আপডেট",
+          appVersion: "বর্তমান ভার্সন",
+          checkUpdates: "আপডেট চেক করুন",
+          installApp: "ফোনে অ্যাপ ইনস্টল করুন",
+          installAppShort: "⬇ ইনস্টল",
+          checkingUpdate: "আপডেট খোঁজা হচ্ছে...",
+          upToDate: "আপনি সর্বশেষ ভার্সন ব্যবহার করছেন!",
+          offlineMode: "অফলাইন মোড",
+          onlineMode: "অনলাইন",
+          swUnsupported: "অনলাইন আপডেটের জন্য অ্যাপটি HTTPS হোস্টিংয়ে (যেমন GitHub Pages) থাকতে হবে।",
+          unfinishedMatch: "অসমাপ্ত ম্যাচ পাওয়া গেছে",
+          resume: "চালিয়ে যান",
+          matchMode: "ম্যাচের ধরন",
+          singlePlayer: "একক খেলোয়াড়",
+          doublePlayer: "দ্বৈত দল",
+          playerNames: "খেলোয়াড়দের নাম",
+          teamNames: "দলগুলোর নাম",
+          player1Name: "খেলোয়াড় ১-এর নাম",
+          player2Name: "খেলোয়াড় ২-এর নাম",
+          team1Name: "দল ১-এর নাম",
+          team2Name: "দল ২-এর নাম",
+          firstStriker: "প্রথম স্ট্রাইকার (সাদা গুটি)",
+          firstStrikerHint: "প্রথম স্ট্রাইকার সাদা গুটি নিয়ে খেলবে। প্রতি রাউন্ডে গুটি স্বয়ংক্রিয়ভাবে বদলাবে।",
+          startMatch: "ম্যাচ শুরু করুন",
+          newMatchShort: "নতুন",
+          round: "রাউন্ড",
+          target29: "লক্ষ্য: ২৯ পয়েন্ট (রেড সীমা: ২৪)",
+          redDisabled: "রেড বোনাস বন্ধ (২৪+)",
+          presetNil: "⚡ নিল বোর্ড",
+          presetT1Red: "⚡ +রেড (১)",
+          presetT2Red: "⚡ +রেড (১)",
+          presetT1Clean: "⚡ ক্লিন (১)",
+          presetT2Clean: "⚡ ক্লিন (১)",
+          pointWinner: "পয়েন্ট বিজয়ী",
+          nilBoard: "নিল বোর্ড",
+          redCover: "রেড কভার (+৫)",
+          noOne: "কেউ না",
+          remainingCoins: "বিপক্ষের বাকি গুটি",
+          undoAction: "↶ পূর্বের ধাপ",
+          undoRound: "⟲ রাউন্ড বাতিল",
+          editRounds: "✎ রাউন্ড",
+          nextRound: "পরবর্তী রাউন্ড",
+          matchWinner: "ম্যাচ বিজয়ী",
+          totalRounds: "মোট রাউন্ড",
+          shareScorecard: "স্কোরকার্ড শেয়ার করুন",
+          newMatch: "নতুন ম্যাচ",
+          matchHistory: "ম্যাচের ইতিহাস",
+          overallStats: "সামগ্রিক পরিসংখ্যান",
+          totalMatches: "মোট ম্যাচ",
+          highestScore: "সর্বোচ্চ স্কোর",
+          totalWins: "মোট জয়",
+          totalLosses: "মোট হার",
+          teamPerformance: "দল / খেলোয়াড়ের পারফরম্যান্স",
+          preferences: "সেটিংস ও পছন্দ",
+          language: "ভাষা",
+          soundEffects: "সাউন্ড ইফেক্ট",
+          soundDesc: "ক্লিক, পয়েন্ট ও জয়ের অফলাইন সাউন্ড",
+          vibration: "ভাইব্রেশন",
+          vibrationDesc: "বোতামে চাপলে হালকা কম্পন",
+          dataManagement: "ডেটা ব্যবস্থাপনা",
+          backupData: "ডেটা ব্যাকআপ (JSON)",
+          restoreData: "ডেটা রিস্টোর (JSON)",
+          resetAll: "সব ডেটা মুছুন",
+          navPlay: "ম্যাচ",
+          navHistory: "ইতিহাস",
+          navStats: "পরিসংখ্যান",
+          navSettings: "সেটিংস",
+          selectPrompt: "পয়েন্ট হিসাব দেখতে বিজয়ী ও বাকি গুটি নির্বাচন করুন।",
+          selectCoinsPrompt: "বিপক্ষের বাকি গুটি (১–৯) নির্বাচন করুন।",
+          nilPreview: "নিল বোর্ড: কোনো দলই পয়েন্ট পাবে না। সাদা/কালো গুটি বদলাবে।",
+          redLimitApplied: "২৪+ সীমা: রেড বোনাস = ০",
+          redBonusApplied: "রেড +৫",
+          coinsPts: "গুটি",
+          noHistory: "এখনো কোনো সম্পূর্ণ ম্যাচ নেই।",
+          noStats: "পরিসংখ্যান দেখতে অন্তত একটি ম্যাচ খেলুন।",
+          wins: "জয়",
+          losses: "হার",
+          matches: "ম্যাচ",
+          best: "সর্বোচ্চ",
+          editRoundTitle: "রাউন্ড সম্পাদনা",
+          roundDetails: "ম্যাচের বিস্তারিত",
+          saveChanges: "সংরক্ষণ ও পুনঃহিসাব",
+          edit: "সম্পাদনা",
+          delete: "মুছুন",
+          confirmReset: "আপনি কি নিশ্চিত যে সব ম্যাচের ইতিহাস ও সেটিংস মুছে ফেলবেন?",
+          confirmNewMatch: "নতুন ম্যাচ শুরু করবেন? বর্তমান অসমাপ্ত ম্যাচ মুছে যাবে।",
+          toastSaved: "রাউন্ড সংরক্ষিত হয়েছে",
+          toastUndoneAction: "সর্বশেষ ধাপ বাতিল হয়েছে",
+          toastUndoneRound: "শেষ রাউন্ড বাতিল হয়েছে",
+          toastInvalidRound: "অনুগ্রহ করে রাউন্ডের অপশনগুলো নির্বাচন করুন।",
+          toastBackupDone: "ব্যাকআপ ডাউনলোড হয়েছে!",
+          toastRestoreDone: "ডেটা রিস্টোর সম্পন্ন হয়েছে!",
+          toastRestoreFail: "অকার্যকর ব্যাকআপ ফাইল।",
+          toastResetDone: "সব ডেটা মুছে ফেলা হয়েছে।",
+          toastCopied: "স্কোরকার্ড তৈরি হয়েছে!",
+          winnerTag: "বিজয়ী"
+        }
+      };
+
+      /* ================= 2. PWA SERVICE WORKER & UPDATE SYSTEM ================= */
+      let swRegistration = null;
+      let waitingWorker = null;
+      let refreshing = false;
+      let deferredInstallPrompt = null;
+
+      function showUpdateBanner(worker) {
+        waitingWorker = worker;
+        $("update-banner").classList.remove("hidden");
+      }
+
+      function initPWA() {
+        updateNetworkBadge();
+        window.addEventListener("online", updateNetworkBadge);
+        window.addEventListener("offline", updateNetworkBadge);
+
+        window.addEventListener("beforeinstallprompt", (e) => {
+          e.preventDefault();
+          deferredInstallPrompt = e;
+          $("install-top-btn").classList.remove("hidden");
+          $("btn-install-app").classList.remove("hidden");
+        });
+
+        window.addEventListener("appinstalled", () => {
+          deferredInstallPrompt = null;
+          $("install-top-btn").classList.add("hidden");
+          $("btn-install-app").classList.add("hidden");
+        });
+
+        if ("serviceWorker" in navigator) {
+          navigator.serviceWorker
+            .register("./sw.js", { updateViaCache: "none" })
+            .then((reg) => {
+              swRegistration = reg;
+              if (reg.waiting) {
+                showUpdateBanner(reg.waiting);
+              }
+              reg.addEventListener("updatefound", () => {
+                const newWorker = reg.installing;
+                if (!newWorker) return;
+                newWorker.addEventListener("statechange", () => {
+                  if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
+                    showUpdateBanner(newWorker);
+                  }
+                });
+              });
+            })
+            .catch(() => {});
+
+          navigator.serviceWorker.addEventListener("controllerchange", () => {
+            if (refreshing) return;
+            refreshing = true;
+            window.location.reload();
+          });
+        }
+      }
+
+      function updateNetworkBadge() {
+        const badge = $("net-status-badge");
+        if (!badge) return;
+        if (navigator.onLine) {
+          badge.textContent = t("onlineMode");
+          badge.style.color = "var(--success)";
+        } else {
+          badge.textContent = t("offlineMode");
+          badge.style.color = "var(--warning)";
+        }
+      }
+
+      async function promptInstallApp() {
+        if (!deferredInstallPrompt) return;
+        Sound.click();
+        deferredInstallPrompt.prompt();
+        await deferredInstallPrompt.userChoice;
+        deferredInstallPrompt = null;
+        $("install-top-btn").classList.add("hidden");
+        $("btn-install-app").classList.add("hidden");
+      }
+
+      async function manualCheckForUpdate() {
+        Sound.click();
+        if (!navigator.onLine) {
+          showToast(t("offlineMode"));
+          return;
+        }
+        if (!swRegistration) {
+          showToast(t("swUnsupported"));
+          return;
+        }
+        showToast(t("checkingUpdate"));
+        try {
+          await swRegistration.update();
+          if (swRegistration.waiting) {
+            showUpdateBanner(swRegistration.waiting);
+          } else if (!swRegistration.installing) {
+            setTimeout(() => {
+              if (!waitingWorker) showToast(t("upToDate"));
+            }, 900);
+          }
+        } catch (_) {
+          showToast(t("swUnsupported"));
+        }
+      }
+
+      /* ================= 3. OFFLINE SOUND & VIBRATION ================= */
+      const Sound = {
+        ctx: null,
+        ensureCtx() {
+          if (!this.ctx) {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (AudioCtx) this.ctx = new AudioCtx();
+          }
+          if (this.ctx && this.ctx.state === "suspended") {
+            this.ctx.resume().catch(() => {});
+          }
+        },
+        playTone(freq, duration, type = "sine", vol = 0.12, delay = 0) {
+          if (!state.settings.sound) return;
+          try {
+            this.ensureCtx();
+            if (!this.ctx) return;
+            const tNow = this.ctx.currentTime + delay;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, tNow);
+            gain.gain.setValueAtTime(vol, tNow);
+            gain.gain.exponentialRampToValueAtTime(0.001, tNow + duration);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(tNow);
+            osc.stop(tNow + duration);
+          } catch (_) {}
+        },
+        click() { this.playTone(540, 0.045, "triangle", 0.09); this.vibrate(12); },
+        point() { this.playTone(587.33, 0.09, "sine", 0.13, 0); this.playTone(880, 0.14, "sine", 0.12, 0.07); this.vibrate(25); },
+        round() { this.playTone(392, 0.08, "triangle", 0.11, 0); this.playTone(523.25, 0.12, "triangle", 0.11, 0.06); this.vibrate(30); },
+        victory() { [523.25, 659.25, 783.99, 1046.5].forEach((f, idx) => this.playTone(f, 0.24, "triangle", 0.15, idx * 0.11)); this.vibrate([40, 50, 80]); },
+        vibrate(pattern) {
+          if (state.settings.vibration && navigator.vibrate) {
+            try { navigator.vibrate(pattern); } catch (_) {}
+          }
+        }
+      };
+
+      /* ================= 4. PURE SCORING ENGINE ================= */
+      const WIN_TARGET = 29;
+      const RED_LIMIT = 24;
+      const RED_POINTS = 5;
+
+      function calculateRoundPoints(score1Before, score2Before, sel) {
+        if (sel.winner === "nil") {
+          return { p1: 0, p2: 0, redBonus1: 0, redBonus2: 0, redBlocked1: false, redBlocked2: false, coins1: 0, coins2: 0 };
+        }
+        const coins = Number(sel.coins) || 0;
+        const coins1 = sel.winner === "1" ? coins : 0;
+        const coins2 = sel.winner === "2" ? coins : 0;
+        let redBonus1 = 0, redBonus2 = 0, redBlocked1 = false, redBlocked2 = false;
+
+        if (sel.red === "1") {
+          if (score1Before < RED_LIMIT) redBonus1 = RED_POINTS;
+          else redBlocked1 = true;
+        } else if (sel.red === "2") {
+          if (score2Before < RED_LIMIT) redBonus2 = RED_POINTS;
+          else redBlocked2 = true;
+        }
+        return { p1: coins1 + redBonus1, p2: coins2 + redBonus2, redBonus1, redBonus2, redBlocked1, redBlocked2, coins1, coins2 };
+      }
+
+      function recalculateMatch(match) {
+        let s1 = 0, s2 = 0, whiteSide = match.firstStriker;
+        const rebuilt = [];
+        for (let i = 0; i < match.rounds.length; i++) {
+          const r = match.rounds[i];
+          const calc = calculateRoundPoints(s1, s2, r);
+          s1 += calc.p1;
+          s2 += calc.p2;
+          rebuilt.push({
+            roundNo: i + 1, whiteSide, winner: r.winner,
+            red: r.winner === "nil" ? "none" : r.red,
+            coins: r.winner === "nil" ? 0 : r.coins,
+            p1: calc.p1, p2: calc.p2,
+            redBonus1: calc.redBonus1, redBonus2: calc.redBonus2,
+            redBlocked1: calc.redBlocked1, redBlocked2: calc.redBlocked2,
+            scoreAfter1: s1, scoreAfter2: s2
+          });
+          whiteSide = whiteSide === "1" ? "2" : "1";
+        }
+        match.rounds = rebuilt;
+        match.score1 = s1;
+        match.score2 = s2;
+        match.whiteSide = whiteSide;
+        match.currentRound = rebuilt.length + 1;
+      }
+
+      /* ================= 5. STORAGE SERVICE ================= */
+      const STORAGE_KEYS = { SETTINGS: "csp_settings_v1", ACTIVE_MATCH: "csp_active_match_v1", HISTORY: "csp_history_v1" };
+      const defaultSettings = { lang: "en", sound: true, vibration: true };
+
+      const state = {
+        settings: { ...defaultSettings },
+        setup: { mode: "single", firstStriker: "1" },
+        match: null,
+        selection: { winner: null, red: "none", coins: null },
+        undoStack: [],
+        history: [],
+        lastResult: null,
+        activeView: "home"
+      };
+
+      function loadStorage() {
+        try { const s = JSON.parse(localStorage.getItem(STORAGE_KEYS.SETTINGS)); if (s) state.settings = { ...defaultSettings, ...s }; } catch (_) {}
+        try { const h = JSON.parse(localStorage.getItem(STORAGE_KEYS.HISTORY)); if (Array.isArray(h)) state.history = h; } catch (_) {}
+        try {
+          const m = JSON.parse(localStorage.getItem(STORAGE_KEYS.ACTIVE_MATCH));
+          if (m && m.name1 && m.name2) {
+            state.match = m;
+            if (m.pendingSelection) state.selection = { ...m.pendingSelection };
+          }
+        } catch (_) {}
+      }
+
+      function saveSettings() { localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(state.settings)); }
+      function saveActiveMatch() {
+        if (state.match) {
+          state.match.pendingSelection = { ...state.selection };
+          localStorage.setItem(STORAGE_KEYS.ACTIVE_MATCH, JSON.stringify(state.match));
+        } else {
+          localStorage.removeItem(STORAGE_KEYS.ACTIVE_MATCH);
+        }
+      }
+      function saveHistory() { localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(state.history)); }
+
+      /* ================= 6. UI HELPERS & RENDERERS ================= */
+      const $ = (id) => document.getElementById(id);
+      function t(key) {
+        const dict = I18N[state.settings.lang] || I18N.en;
+        return dict[key] || I18N.en[key] || key;
+      }
+
+      let toastTimer = null;
+      function showToast(msg) {
+        const el = $("toast");
+        el.textContent = msg;
+        el.classList.add("show");
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => el.classList.remove("show"), 2300);
+      }
+
+      function applyTranslations() {
+        document.querySelectorAll("[data-i18n]").forEach((el) => {
+          el.textContent = t(el.getAttribute("data-i18n"));
+        });
+        updateSetupLabels();
+        updateNetworkBadge();
+        $("lbl-app-version").textContent = APP_VERSION;
+        if (state.match) renderMatchScreen();
+        if (state.activeView === "history") renderHistory();
+        if (state.activeView === "stats") renderStats();
+        $("current-lang-label").textContent = state.settings.lang === "bn" ? "বাংলা" : "English";
+        $("lang-en").classList.toggle("active", state.settings.lang === "en");
+        $("lang-bn").classList.toggle("active", state.settings.lang === "bn");
+      }
+
+      function switchView(viewName) {
+        state.activeView = viewName;
+        document.querySelectorAll(".view").forEach((v) => v.classList.remove("active"));
+        $("view-" + viewName).classList.add("active");
+        document.querySelectorAll(".nav-btn").forEach((b) => b.classList.remove("active"));
+        if (viewName === "home" || viewName === "match" || viewName === "result") {
+          document.querySelector('[data-nav="match-or-home"]').classList.add("active");
+        } else {
+          const navBtn = document.querySelector(`[data-nav="${viewName}"]`);
+          if (navBtn) navBtn.classList.add("active");
+        }
+        $("end-match-early-btn").classList.toggle("hidden", viewName !== "match");
+        if (viewName === "home") renderHome();
+        if (viewName === "match") renderMatchScreen();
+        if (viewName === "history") renderHistory();
+        if (viewName === "stats") renderStats();
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+
+      function updateSetupLabels() {
+        const isDouble = state.setup.mode === "double";
+        $("names-section-title").textContent = isDouble ? t("teamNames") : t("playerNames");
+        $("lbl-side1").textContent = isDouble ? t("team1Name") : t("player1Name");
+        $("lbl-side2").textContent = isDouble ? t("team2Name") : t("player2Name");
+        const p1Default = isDouble ? (state.settings.lang === "bn" ? "দল ১" : "Team 1") : (state.settings.lang === "bn" ? "খেলোয়াড় ১" : "Player 1");
+        const p2Default = isDouble ? (state.settings.lang === "bn" ? "দল ২" : "Team 2") : (state.settings.lang === "bn" ? "খেলোয়াড় ২" : "Player 2");
+        $("input-name1").placeholder = p1Default;
+        $("input-name2").placeholder = p2Default;
+        $("first-1").textContent = $("input-name1").value.trim() || p1Default;
+        $("first-2").textContent = $("input-name2").value.trim() || p2Default;
+      }
+
+      function renderHome() {
+        updateSetupLabels();
+        if (state.match) {
+          $("resume-container").classList.remove("hidden");
+          $("resume-summary").textContent = `${state.match.name1} (${state.match.score1}) vs ${state.match.name2} (${state.match.score2}) • ${t("round")} ${state.match.currentRound}`;
+        } else {
+          $("resume-container").classList.add("hidden");
+        }
+      }
+
+      function renderMatchScreen() {
+        const m = state.match;
+        if (!m) return;
+        $("lbl-round-num").textContent = m.currentRound;
+        $("sb-name-1").textContent = m.name1;
+        $("sb-name-2").textContent = m.name2;
+        $("sb-score-1").textContent = m.score1;
+        $("sb-score-2").textContent = m.score2;
+
+        const w1 = m.whiteSide === "1";
+        $("coin-ind-1").className = "coin-indicator " + (w1 ? "coin-white" : "coin-black");
+        $("coin-ind-2").className = "coin-indicator " + (w1 ? "coin-black" : "coin-white");
+        $("limit-tag-1").classList.toggle("hidden", m.score1 < RED_LIMIT);
+        $("limit-tag-2").classList.toggle("hidden", m.score2 < RED_LIMIT);
+
+        $("win-btn-1").textContent = m.name1;
+        $("win-btn-2").textContent = m.name2;
+        $("red-btn-1").textContent = m.name1;
+        $("red-btn-2").textContent = m.name2;
+
+        $("preset-t1-red").textContent = `⚡ ${m.name1} + Red (1)`;
+        $("preset-t2-red").textContent = `⚡ ${m.name2} + Red (1)`;
+        $("preset-t1-clean").textContent = `⚡ ${m.name1} (1)`;
+        $("preset-t2-clean").textContent = `⚡ ${m.name2} (1)`;
+
+        const sel = state.selection;
+        $("win-btn-1").classList.toggle("selected", sel.winner === "1");
+        $("win-btn-2").classList.toggle("selected", sel.winner === "2");
+        $("win-btn-nil").className = "choice-btn" + (sel.winner === "nil" ? " selected-nil" : "");
+
+        const isNil = sel.winner === "nil";
+        $("card-red-cover").classList.toggle("hidden", isNil);
+        $("card-remaining-coins").classList.toggle("hidden", isNil);
+
+        $("red-btn-1").classList.toggle("selected", sel.red === "1");
+        $("red-btn-2").classList.toggle("selected", sel.red === "2");
+        $("red-btn-none").classList.toggle("selected", sel.red === "none");
+
+        document.querySelectorAll(".coin-num-btn").forEach((b) => {
+          b.classList.toggle("selected", Number(b.dataset.coins) === sel.coins);
+        });
+
+        $("btn-undo-action").disabled = state.undoStack.length === 0;
+        $("btn-undo-round").disabled = m.rounds.length === 0;
+        $("btn-edit-rounds").textContent = `${t("editRounds")} (${m.rounds.length})`;
+        renderRoundPreview();
+      }
+
+      function renderRoundPreview() {
+        const m = state.match, sel = state.selection, box = $("round-preview"), nextBtn = $("next-round-btn");
+        if (!sel.winner) { box.innerHTML = `<span class="muted">${t("selectPrompt")}</span>`; nextBtn.disabled = true; return; }
+        if (sel.winner === "nil") { box.innerHTML = `<strong>${t("nilBoard")}</strong> — ${t("nilPreview")}`; nextBtn.disabled = false; return; }
+        if (!sel.coins) { box.innerHTML = `<span class="muted">${t("selectCoinsPrompt")}</span>`; nextBtn.disabled = true; return; }
+
+        nextBtn.disabled = false;
+        const calc = calculateRoundPoints(m.score1, m.score2, sel);
+        const lines = [];
+        if (calc.p1 > 0 || calc.redBlocked1) {
+          const parts = [];
+          if (calc.coins1) parts.push(`${t("coinsPts")} +${calc.coins1}`);
+          if (calc.redBonus1) parts.push(t("redBonusApplied"));
+          if (calc.redBlocked1) parts.push(`<span style="color:var(--warning)">${t("redLimitApplied")}</span>`);
+          lines.push(`<strong>${escapeHtml(m.name1)}: +${calc.p1}</strong> (${parts.join(", ")}) → <strong>${m.score1 + calc.p1}</strong>`);
+        }
+        if (calc.p2 > 0 || calc.redBlocked2) {
+          const parts = [];
+          if (calc.coins2) parts.push(`${t("coinsPts")} +${calc.coins2}`);
+          if (calc.redBonus2) parts.push(t("redBonusApplied"));
+          if (calc.redBlocked2) parts.push(`<span style="color:var(--warning)">${t("redLimitApplied")}</span>`);
+          lines.push(`<strong>${escapeHtml(m.name2)}: +${calc.p2}</strong> (${parts.join(", ")}) → <strong>${m.score2 + calc.p2}</strong>`);
+        }
+        box.innerHTML = lines.join("<br>");
+      }
+
+      function pushUndoSelection() {
+        state.undoStack.push({ ...state.selection });
+        if (state.undoStack.length > 25) state.undoStack.shift();
+      }
+
+      /* ================= 7. MATCH LIFECYCLE ================= */
+      function startNewMatch() {
+        Sound.click();
+        const isDouble = state.setup.mode === "double";
+        const def1 = isDouble ? (state.settings.lang === "bn" ? "দল ১" : "Team 1") : (state.settings.lang === "bn" ? "খেলোয়াড় ১" : "Player 1");
+        const def2 = isDouble ? (state.settings.lang === "bn" ? "দল ২" : "Team 2") : (state.settings.lang === "bn" ? "খেলোয়াড় ২" : "Player 2");
+        state.match = {
+          id: "m_" + Date.now(), createdAt: new Date().toISOString(), mode: state.setup.mode,
+          name1: $("input-name1").value.trim() || def1, name2: $("input-name2").value.trim() || def2,
+          firstStriker: state.setup.firstStriker, whiteSide: state.setup.firstStriker,
+          score1: 0, score2: 0, currentRound: 1, rounds: []
+        };
+        state.selection = { winner: null, red: "none", coins: null };
+        state.undoStack = [];
+        saveActiveMatch();
+        switchView("match");
+      }
+
+      function commitNextRound() {
+        const m = state.match, sel = state.selection;
+        if (!m || !sel.winner || (sel.winner !== "nil" && !sel.coins)) { showToast(t("toastInvalidRound")); return; }
+        const calc = calculateRoundPoints(m.score1, m.score2, sel);
+        const newS1 = m.score1 + calc.p1, newS2 = m.score2 + calc.p2;
+        m.rounds.push({
+          roundNo: m.currentRound, whiteSide: m.whiteSide, winner: sel.winner,
+          red: sel.winner === "nil" ? "none" : sel.red, coins: sel.winner === "nil" ? 0 : sel.coins,
+          p1: calc.p1, p2: calc.p2, redBonus1: calc.redBonus1, redBonus2: calc.redBonus2,
+          redBlocked1: calc.redBlocked1, redBlocked2: calc.redBlocked2, scoreAfter1: newS1, scoreAfter2: newS2
+        });
+        m.score1 = newS1; m.score2 = newS2; m.currentRound += 1;
+        m.whiteSide = m.whiteSide === "1" ? "2" : "1";
+        state.selection = { winner: null, red: "none", coins: null };
+        state.undoStack = [];
+        if (m.score1 >= WIN_TARGET || m.score2 >= WIN_TARGET) { finishMatch(m, sel.winner); return; }
+        if (calc.p1 > 0 || calc.p2 > 0) Sound.point(); else Sound.round();
+        saveActiveMatch();
+        renderMatchScreen();
+        showToast(t("toastSaved"));
+      }
+
+      function finishMatch(m, lastWinnerSide) {
+        let winnerSide = "1";
+        if (m.score1 >= WIN_TARGET && m.score2 >= WIN_TARGET) {
+          winnerSide = m.score1 !== m.score2 ? (m.score1 > m.score2 ? "1" : "2") : (lastWinnerSide === "2" ? "2" : "1");
+        } else {
+          winnerSide = m.score1 >= WIN_TARGET ? "1" : "2";
+        }
+        const finished = {
+          id: m.id, date: new Date().toISOString(), mode: m.mode,
+          name1: m.name1, name2: m.name2, score1: m.score1, score2: m.score2,
+          winnerSide, winnerName: winnerSide === "1" ? m.name1 : m.name2,
+          totalRounds: m.rounds.length, rounds: m.rounds
+        };
+        state.history.unshift(finished);
+        saveHistory();
+        state.lastResult = finished;
+        state.match = null;
+        saveActiveMatch();
+        showVictoryScreen(finished);
+      }
+
+      function showVictoryScreen(res) {
+        $("res-winner-name").textContent = res.winnerName;
+        $("res-name-1").textContent = res.name1;
+        $("res-name-2").textContent = res.name2;
+        $("res-score-1").textContent = res.score1;
+        $("res-score-2").textContent = res.score2;
+        $("res-rounds").textContent = res.totalRounds;
+        switchView("result");
+        Sound.victory();
+        launchConfetti();
+      }
+
+      /* ================= 8. CONFETTI ================= */
+      function launchConfetti() {
+        const canvas = $("confetti-canvas"), ctx = canvas.getContext("2d");
+        canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+        const colors = ["#E50914", "#ffffff", "#f39c12", "#2ecc71", "#ff5252"];
+        const pieces = Array.from({ length: 70 }, () => ({
+          x: Math.random() * canvas.width, y: -20 - Math.random() * 140,
+          w: 7 + Math.random() * 6, h: 10 + Math.random() * 6,
+          vx: (Math.random() - 0.5) * 4, vy: 3 + Math.random() * 4,
+          rot: Math.random() * 360, vr: (Math.random() - 0.5) * 8,
+          color: colors[Math.floor(Math.random() * colors.length)]
+        }));
+        let frames = 0;
+        function tick() {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          pieces.forEach((p) => {
+            p.x += p.vx; p.y += p.vy; p.rot += p.vr;
+            ctx.save(); ctx.translate(p.x, p.y); ctx.rotate((p.rot * Math.PI) / 180);
+            ctx.fillStyle = p.color; ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h); ctx.restore();
+          });
+          if (++frames < 150) requestAnimationFrame(tick);
+          else ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+        requestAnimationFrame(tick);
+      }
+
+      /* ================= 9. HISTORY & STATS ================= */
+      function renderHistory() {
+        const container = $("history-list");
+        if (!state.history.length) { container.innerHTML = `<div class="card muted" style="text-align:center;">${t("noHistory")}</div>`; return; }
+        container.innerHTML = state.history.map((item, idx) => {
+          const d = new Date(item.date).toLocaleString(state.settings.lang === "bn" ? "bn-BD" : "en-US", { dateStyle: "medium", timeStyle: "short" });
+          return `
+            <div class="list-item" data-hist-idx="${idx}" style="cursor:pointer;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                <span class="muted" style="font-size:0.75rem;">${escapeHtml(d)}</span>
+                <span style="background:rgba(229,9,20,0.18); color:#ff6b72; border:1px solid rgba(229,9,20,0.4); font-size:0.72rem; font-weight:800; padding:2px 8px; border-radius:99px;">
+                  🏆 ${escapeHtml(item.winnerName)}
+                </span>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center; font-weight:800; font-size:1rem;">
+                <span>${escapeHtml(item.name1)} (${item.score1})</span>
+                <span class="muted">vs</span>
+                <span>${escapeHtml(item.name2)} (${item.score2})</span>
+              </div>
+              <div class="muted" style="font-size:0.76rem; margin-top:5px;">${t("totalRounds")}: ${item.totalRounds}</div>
+            </div>`;
+        }).join("");
+        container.querySelectorAll("[data-hist-idx]").forEach((el) => {
+          el.addEventListener("click", () => { Sound.click(); openHistoryDetail(Number(el.dataset.histIdx)); });
+        });
+      }
+
+      function renderStats() {
+        const hist = state.history;
+        let highestScore = 0;
+        const teams = {};
+        const ensureTeam = (name) => (teams[name] || (teams[name] = { name, matches: 0, wins: 0, losses: 0, best: 0 }));
+
+        hist.forEach((m) => {
+          highestScore = Math.max(highestScore, m.score1, m.score2);
+          const t1 = ensureTeam(m.name1), t2 = ensureTeam(m.name2);
+          t1.matches++; t2.matches++;
+          t1.best = Math.max(t1.best, m.score1); t2.best = Math.max(t2.best, m.score2);
+          if (m.winnerSide === "1") { t1.wins++; t2.losses++; } else { t2.wins++; t1.losses++; }
+        });
+
+        $("st-total-matches").textContent = hist.length;
+        $("st-highest-score").textContent = highestScore;
+        $("st-total-wins").textContent = hist.length;
+        $("st-total-losses").textContent = hist.length;
+
+        const list = $("team-stats-list");
+        const teamArr = Object.values(teams).sort((a, b) => b.wins - a.wins || b.best - a.best);
+        if (!teamArr.length) { list.innerHTML = `<div class="card muted" style="text-align:center;">${t("noStats")}</div>`; return; }
+
+        list.innerHTML = teamArr.map((tm) => {
+          const rate = tm.matches ? Math.round((tm.wins / tm.matches) * 100) : 0;
+          return `
+            <div class="list-item">
+              <div style="display:flex; justify-content:space-between; font-weight:800; margin-bottom:6px;">
+                <span>${escapeHtml(tm.name)}</span>
+                <span style="color:var(--accent);">${rate}% Win</span>
+              </div>
+              <div class="muted" style="display:flex; justify-content:space-between; font-size:0.8rem;">
+                <span>${t("matches")}: ${tm.matches}</span><span>${t("wins")}: ${tm.wins}</span>
+                <span>${t("losses")}: ${tm.losses}</span><span>${t("best")}: ${tm.best}</span>
+              </div>
+            </div>`;
+        }).join("");
+      }
+
+      /* ================= 10. MODALS ================= */
+      function openModal(title, htmlContent) {
+        $("modal-title").textContent = title;
+        $("modal-body").innerHTML = htmlContent;
+        $("modal-backdrop").classList.add("open");
+      }
+      function closeModal() { $("modal-backdrop").classList.remove("open"); }
+
+      function openEditRoundsModal() {
+        const m = state.match;
+        if (!m) return;
+        if (!m.rounds.length) { openModal(t("editRoundTitle"), `<p class="muted">${t("noHistory")}</p>`); return; }
+        const html = m.rounds.map((r, idx) => `
+          <div class="list-item">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+              <strong>${t("round")} ${r.roundNo}</strong>
+              <button class="pill-btn" data-edit-round="${idx}">${t("edit")}</button>
+            </div>
+            <div class="muted" style="font-size:0.8rem;">
+              ${r.winner === "nil" ? t("nilBoard") : `${r.winner === "1" ? escapeHtml(m.name1) : escapeHtml(m.name2)} (${t("coinsPts")}: ${r.coins}) • ${t("redCover")}: ${r.red === "none" ? t("noOne") : (r.red === "1" ? escapeHtml(m.name1) : escapeHtml(m.name2))}`}
+              <br>Score: ${escapeHtml(m.name1)} ${r.scoreAfter1} - ${r.scoreAfter2} ${escapeHtml(m.name2)}
+            </div>
+          </div>`).join("");
+        openModal(t("editRoundTitle"), html);
+        $("modal-body").querySelectorAll("[data-edit-round]").forEach((btn) => {
+          btn.addEventListener("click", () => { Sound.click(); openSingleRoundEditor(Number(btn.dataset.editRound)); });
+        });
+      }
+
+      function openSingleRoundEditor(idx) {
+        const m = state.match, r = m.rounds[idx];
+        const html = `
+          <div class="input-group">
+            <label class="input-label">${t("pointWinner")}</label>
+            <select class="text-input" id="er-winner">
+              <option value="1" ${r.winner === "1" ? "selected" : ""}>${escapeHtml(m.name1)}</option>
+              <option value="2" ${r.winner === "2" ? "selected" : ""}>${escapeHtml(m.name2)}</option>
+              <option value="nil" ${r.winner === "nil" ? "selected" : ""}>${t("nilBoard")}</option>
+            </select>
+          </div>
+          <div class="input-group">
+            <label class="input-label">${t("redCover")}</label>
+            <select class="text-input" id="er-red">
+              <option value="none" ${r.red === "none" ? "selected" : ""}>${t("noOne")}</option>
+              <option value="1" ${r.red === "1" ? "selected" : ""}>${escapeHtml(m.name1)}</option>
+              <option value="2" ${r.red === "2" ? "selected" : ""}>${escapeHtml(m.name2)}</option>
+            </select>
+          </div>
+          <div class="input-group">
+            <label class="input-label">${t("remainingCoins")}</label>
+            <select class="text-input" id="er-coins">
+              ${[1,2,3,4,5,6,7,8,9].map(n => `<option value="${n}" ${r.coins === n ? "selected" : ""}>${n}</option>`).join("")}
+            </select>
+          </div>
+          <button class="btn-primary" id="er-save">${t("saveChanges")}</button>`;
+        openModal(`${t("edit")} - ${t("round")} ${r.roundNo}`, html);
+        $("er-save").addEventListener("click", () => {
+          const w = $("er-winner").value;
+          m.rounds[idx].winner = w;
+          m.rounds[idx].red = w === "nil" ? "none" : $("er-red").value;
+          m.rounds[idx].coins = w === "nil" ? 0 : Number($("er-coins").value);
+          recalculateMatch(m);
+          saveActiveMatch();
+          Sound.point();
+          closeModal();
+          if (m.score1 >= WIN_TARGET || m.score2 >= WIN_TARGET) finishMatch(m, w);
+          else { renderMatchScreen(); showToast(t("toastSaved")); }
+        });
+      }
+
+      function openHistoryDetail(idx) {
+        const item = state.history[idx];
+        if (!item) return;
+        const roundsHtml = (item.rounds || []).map((r) => `
+          <div class="list-item" style="padding:9px 12px;">
+            <div style="display:flex; justify-content:space-between; font-size:0.83rem;">
+              <strong>${t("round")} ${r.roundNo}</strong>
+              <span>+${r.p1} / +${r.p2} → <strong>${r.scoreAfter1} - ${r.scoreAfter2}</strong></span>
+            </div>
+          </div>`).join("");
+        const html = `
+          <div class="list-item" style="text-align:center;">
+            <div style="font-weight:900; font-size:1.1rem; margin-bottom:4px;">${escapeHtml(item.name1)} (${item.score1}) vs ${escapeHtml(item.name2)} (${item.score2})</div>
+            <div style="color:var(--accent); font-weight:800;">🏆 ${escapeHtml(item.winnerName)}</div>
+          </div>${roundsHtml}
+          <button class="btn-secondary" id="del-hist-btn" style="width:100%; margin-top:8px; color:#ff7f85;">${t("delete")}</button>`;
+        openModal(t("roundDetails"), html);
+        $("del-hist-btn").addEventListener("click", () => {
+          Sound.click(); state.history.splice(idx, 1); saveHistory(); closeModal(); renderHistory();
+        });
+      }
+
+      /* ================= 11. SHARE SCORECARD ================= */
+      async function shareScorecard() {
+        const res = state.lastResult;
+        if (!res) return;
+        Sound.click();
+        const canvas = document.createElement("canvas");
+        canvas.width = 900; canvas.height = 540;
+        const ctx = canvas.getContext("2d");
+        ctx.fillStyle = "#080808"; ctx.fillRect(0, 0, 900, 540);
+        ctx.fillStyle = "#E50914"; ctx.fillRect(0, 0, 900, 12);
+        ctx.fillStyle = "#242424"; roundRect(ctx, 45, 45, 810, 450, 26); ctx.fill();
+        ctx.fillStyle = "#E50914"; ctx.font = "900 28px sans-serif"; ctx.textAlign = "center";
+        ctx.fillText("CARROM SCORER PRO", 450, 105);
+        ctx.fillStyle = "#f39c12"; ctx.font = "bold 22px sans-serif";
+        ctx.fillText(`🏆 ${t("winnerTag").toUpperCase()}: ${res.winnerName}`, 450, 155);
+        ctx.fillStyle = "#ffffff"; ctx.font = "800 32px sans-serif";
+        ctx.fillText(res.name1, 240, 245); ctx.fillText(res.name2, 660, 245);
+        ctx.font = "900 92px sans-serif";
+        ctx.fillText(String(res.score1), 240, 355); ctx.fillText(String(res.score2), 660, 355);
+        ctx.fillStyle = "#E50914"; ctx.font = "900 34px sans-serif"; ctx.fillText("VS", 450, 330);
+        ctx.fillStyle = "#B3B3B3"; ctx.font = "600 22px sans-serif";
+        ctx.fillText(`${t("totalRounds")}: ${res.totalRounds}  •  ${new Date(res.date).toLocaleDateString()}`, 450, 445);
+
+        const shareText = `🏆 ${res.winnerName} won in Carrom Scorer Pro!\n${res.name1}: ${res.score1} vs ${res.name2}: ${res.score2} (${res.totalRounds} rounds)`;
+        canvas.toBlob(async (blob) => {
+          try {
+            if (navigator.canShare && blob) {
+              const file = new File([blob], "carrom-scorecard.png", { type: "image/png" });
+              if (navigator.canShare({ files: [file] })) {
+                await navigator.share({ title: "Carrom Scorer Pro", text: shareText, files: [file] });
+                return;
+              }
+            }
+          } catch (_) {}
+          const a = document.createElement("a");
+          a.href = canvas.toDataURL("image/png");
+          a.download = "carrom-scorecard.png";
+          a.click();
+          showToast(t("toastCopied"));
+        });
+      }
+
+      function roundRect(ctx, x, y, w, h, r) {
+        ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r);
+        ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r);
+        ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+      }
+      function escapeHtml(str) {
+        return String(str).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+      }
+
+      /* ================= 12. EVENT BINDINGS ================= */
+      function bindEvents() {
+        // Update banner events
+        $("btn-apply-update").addEventListener("click", () => {
+          if (waitingWorker) {
+            waitingWorker.postMessage({ type: "SKIP_WAITING" });
+          }
+        });
+        $("btn-dismiss-update").addEventListener("click", () => {
+          $("update-banner").classList.add("hidden");
+        });
+
+        $("install-top-btn").addEventListener("click", promptInstallApp);
+        $("btn-install-app").addEventListener("click", promptInstallApp);
+        $("btn-check-updates").addEventListener("click", manualCheckForUpdate);
+
+        document.querySelectorAll(".nav-btn").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            Sound.click();
+            const target = btn.dataset.nav;
+            switchView(target === "match-or-home" ? (state.match ? "match" : "home") : target);
+          });
+        });
+
+        $("quick-lang-btn").addEventListener("click", () => {
+          Sound.click();
+          state.settings.lang = state.settings.lang === "en" ? "bn" : "en";
+          saveSettings();
+          applyTranslations();
+        });
+
+        document.querySelectorAll("[data-mode]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            Sound.click(); state.setup.mode = btn.dataset.mode;
+            document.querySelectorAll("[data-mode]").forEach((b) => b.classList.toggle("active", b === btn));
+            updateSetupLabels();
+          });
+        });
+
+        document.querySelectorAll("[data-first]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            Sound.click(); state.setup.firstStriker = btn.dataset.first;
+            document.querySelectorAll("[data-first]").forEach((b) => b.classList.toggle("active", b === btn));
+          });
+        });
+
+        $("input-name1").addEventListener("input", updateSetupLabels);
+        $("input-name2").addEventListener("input", updateSetupLabels);
+        $("start-match-btn").addEventListener("click", startNewMatch);
+        $("resume-btn").addEventListener("click", () => { Sound.click(); if (state.match) switchView("match"); });
+        $("end-match-early-btn").addEventListener("click", () => {
+          Sound.click();
+          if (confirm(t("confirmNewMatch"))) { state.match = null; saveActiveMatch(); switchView("home"); }
+        });
+
+        document.querySelectorAll("[data-winner]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            Sound.click(); pushUndoSelection();
+            state.selection.winner = btn.dataset.winner;
+            if (state.selection.winner === "nil") { state.selection.red = "none"; state.selection.coins = null; }
+            saveActiveMatch(); renderMatchScreen();
+          });
+        });
+
+        document.querySelectorAll("[data-red]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            Sound.click(); pushUndoSelection();
+            state.selection.red = btn.dataset.red;
+            saveActiveMatch(); renderMatchScreen();
+          });
+        });
+
+        document.querySelectorAll(".coin-num-btn").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            Sound.click(); pushUndoSelection();
+            state.selection.coins = Number(btn.dataset.coins);
+            saveActiveMatch(); renderMatchScreen();
+          });
+        });
+
+        $("preset-nil").addEventListener("click", () => { Sound.click(); pushUndoSelection(); state.selection = { winner: "nil", red: "none", coins: null }; saveActiveMatch(); renderMatchScreen(); });
+        $("preset-t1-red").addEventListener("click", () => { Sound.click(); pushUndoSelection(); state.selection = { winner: "1", red: "1", coins: 1 }; saveActiveMatch(); renderMatchScreen(); });
+        $("preset-t2-red").addEventListener("click", () => { Sound.click(); pushUndoSelection(); state.selection = { winner: "2", red: "2", coins: 1 }; saveActiveMatch(); renderMatchScreen(); });
+        $("preset-t1-clean").addEventListener("click", () => { Sound.click(); pushUndoSelection(); state.selection = { winner: "1", red: "none", coins: 1 }; saveActiveMatch(); renderMatchScreen(); });
+        $("preset-t2-clean").addEventListener("click", () => { Sound.click(); pushUndoSelection(); state.selection = { winner: "2", red: "none", coins: 1 }; saveActiveMatch(); renderMatchScreen(); });
+
+        $("btn-undo-action").addEventListener("click", () => {
+          if (!state.undoStack.length) return;
+          Sound.click(); state.selection = state.undoStack.pop();
+          saveActiveMatch(); renderMatchScreen(); showToast(t("toastUndoneAction"));
+        });
+
+        $("btn-undo-round").addEventListener("click", () => {
+          const m = state.match;
+          if (!m || !m.rounds.length) return;
+          Sound.click(); m.rounds.pop(); recalculateMatch(m);
+          state.selection = { winner: null, red: "none", coins: null }; state.undoStack = [];
+          saveActiveMatch(); renderMatchScreen(); showToast(t("toastUndoneRound"));
+        });
+
+        $("btn-edit-rounds").addEventListener("click", () => { Sound.click(); openEditRoundsModal(); });
+        $("next-round-btn").addEventListener("click", commitNextRound);
+        $("btn-share-result").addEventListener("click", shareScorecard);
+        $("btn-new-match").addEventListener("click", () => { Sound.click(); switchView("home"); });
+
+        $("lang-en").addEventListener("click", () => { Sound.click(); state.settings.lang = "en"; saveSettings(); applyTranslations(); });
+        $("lang-bn").addEventListener("click", () => { Sound.click(); state.settings.lang = "bn"; saveSettings(); applyTranslations(); });
+        $("toggle-sound").addEventListener("change", (e) => { state.settings.sound = e.target.checked; saveSettings(); if (state.settings.sound) Sound.click(); });
+        $("toggle-vibration").addEventListener("change", (e) => { state.settings.vibration = e.target.checked; saveSettings(); Sound.vibrate(20); });
+
+        $("btn-backup").addEventListener("click", () => {
+          Sound.click();
+          const payload = { app: "Carrom Scorer Pro", version: APP_VERSION, exportedAt: new Date().toISOString(), settings: state.settings, history: state.history, activeMatch: state.match };
+          const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a"); a.href = url; a.download = `carrom-scorer-pro-backup-${Date.now()}.json`; a.click();
+          URL.revokeObjectURL(url); showToast(t("toastBackupDone"));
+        });
+
+        $("btn-restore").addEventListener("click", () => { Sound.click(); $("restore-file-input").click(); });
+        $("restore-file-input").addEventListener("change", (e) => {
+          const file = e.target.files[0]; if (!file) return;
+          const reader = new FileReader();
+          reader.onload = () => {
+            try {
+              const data = JSON.parse(reader.result);
+              if (data.settings) state.settings = { ...defaultSettings, ...data.settings };
+              if (Array.isArray(data.history)) state.history = data.history;
+              state.match = data.activeMatch || null;
+              saveSettings(); saveHistory(); saveActiveMatch();
+              syncSettingsControls(); applyTranslations(); renderHome(); showToast(t("toastRestoreDone"));
+            } catch (_) { showToast(t("toastRestoreFail")); }
+          };
+          reader.readAsText(file); e.target.value = "";
+        });
+
+        $("btn-reset-all").addEventListener("click", () => {
+          Sound.click();
+          if (confirm(t("confirmReset"))) {
+            localStorage.removeItem(STORAGE_KEYS.SETTINGS);
+            localStorage.removeItem(STORAGE_KEYS.ACTIVE_MATCH);
+            localStorage.removeItem(STORAGE_KEYS.HISTORY);
+            state.settings = { ...defaultSettings }; state.history = []; state.match = null;
+            state.selection = { winner: null, red: "none", coins: null }; state.undoStack = [];
+            syncSettingsControls(); applyTranslations(); switchView("home"); showToast(t("toastResetDone"));
+          }
+        });
+
+        $("modal-close").addEventListener("click", closeModal);
+        $("modal-backdrop").addEventListener("click", (e) => { if (e.target === $("modal-backdrop")) closeModal(); });
+      }
+
+      function syncSettingsControls() {
+        $("toggle-sound").checked = state.settings.sound;
+        $("toggle-vibration").checked = state.settings.vibration;
+      }
+
+      function init() {
+        loadStorage();
+        syncSettingsControls();
+        bindEvents();
+        applyTranslations();
+        initPWA();
+        switchView(state.match ? "match" : "home");
+        setTimeout(() => $("splash-screen").classList.add("hidden"), 1950);
+      }
+
+      init();
+    })();
+  </script>
+</body>
+        </html>
