@@ -1,0 +1,19 @@
+{
+  "name": "Carrom Scorer Pro",
+  "short_name": "Carrom Pro",
+  "description": "Professional Offline Carrom Scoreboard & Match Tracker",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#080808",
+  "theme_color": "#080808",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
